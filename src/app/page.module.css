@@ -36,10 +36,10 @@
   -webkit-text-fill-color: transparent;
 }
 body {
-  background: linear-gradient(135deg, #022597, #334ca0, #074799);
+  background: -webkit-linear-gradient(135deg, #022597, #334ca0, #074799);
 }
 .colourfulMode {
-  background: linear-gradient(135deg, #022597, #334ca0, #074799);
+  background: -webkit-linear-gradient(135deg, #022597, #334ca0, #074799);
   min-height: 100vh;
   color: #fff;
 }
