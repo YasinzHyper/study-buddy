@@ -1,33 +1,30 @@
 "use client";
-import React, { useState } from "react";
-import Head from "next/head";
-import "bootstrap/dist/css/bootstrap.min.css";
-import styles from "../page.module.css";
-
-type PlanItem = {
-  id: number;
-  title: string;
-  description: string;
-  completed: boolean;
-};
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { getPlan, addPlanItem, updatePlanItem, deletePlanItem, PlanItem } from "@/lib/storage";
 
 export default function Plan() {
-  const [plan, setPlan] = useState<PlanItem[]>([
-    { id: 1, title: "Learn Data Structures", description: "Complete 5 LeetCode problems daily.", completed: false },
-    { id: 2, title: "Master Algorithms", description: "Study sorting and searching algorithms.", completed: false },
-    { id: 3, title: "Revise Operating Systems", description: "Go through OS concepts and practice questions.", completed: false },
-  ]);
+  const [plan, setPlan] = useState<PlanItem[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
 
+  // Load plan from localStorage on component mount
+  useEffect(() => {
+    const savedPlan = getPlan();
+    setPlan(savedPlan);
+  }, []);
+
   const handleAddPlan = () => {
     if (newTitle && newDescription) {
-      const newPlanItem: PlanItem = {
-        id: plan.length + 1,
+      const newPlanItem = addPlanItem({
         title: newTitle,
         description: newDescription,
         completed: false,
-      };
+      });
       setPlan([...plan, newPlanItem]);
       setNewTitle("");
       setNewDescription("");
@@ -39,143 +36,153 @@ export default function Plan() {
       item.id === id ? { ...item, completed: !item.completed } : item
     );
     setPlan(updatedPlan);
-  };
-
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
-    const reorderedPlan = Array.from(plan);
-    const [movedItem] = reorderedPlan.splice(result.source.index, 1);
-    reorderedPlan.splice(result.destination.index, 0, movedItem);
-    setPlan(reorderedPlan);
+    updatePlanItem(id, { completed: !plan.find(item => item.id === id)?.completed });
   };
 
   return (
-    <div className={`${styles.colourfulMode} px-5 py-5`}>
-      <Head>
-        <title>Plan - StudyBuddy</title>
-      </Head>
-      <h1 className="text-center mb-5">Your Study Plan</h1>
-
-      <div className="row">
-        {/* Plan List */}
-        <div className="col-md-6 mb-4">
-          <h2 className="mb-4 text-center">Current Goals</h2>
-          {plan.length === 0 ? (
-            <p className="text-center">No goals added yet. Start planning now!</p>
-          ) : (
-            <ul className="list-group">
-              {plan.map((item) => (
-                <li
-                  key={item.id}
-                  className={`list-group-item d-flex justify-content-between align-items-center ${
-                    item.completed ? "list-group-item-success" : ""
-                  }`}
-                >
-                  <div>
-                    <strong>{item.title}</strong>
-                    <p className="mb-1">{item.description}</p>
-                  </div>
-                  <button
-                    className={`btn btn-${item.completed ? "secondary" : "primary"} btn-sm`}
-                    onClick={() => handleToggleComplete(item.id)}
-                  >
-                    {item.completed ? "Undo" : "Complete"}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+    <div className="space-y-12">
+      <div className="text-center mb-8">
+        <div className="gradient-bg-soft rounded-2xl p-6 mb-6">
+          <h1 className="text-4xl font-bold gradient-text mb-2">Your Study Plan</h1>
+          <p className="text-muted-foreground">Set goals and track your progress</p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Plan List */}
+        <Card className="gradient-card-hover">
+          <CardHeader>
+            <CardTitle className="text-center gradient-text text-xl">Current Goals</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {plan.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 gradient-bg-soft rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <p className="text-muted-foreground">No goals added yet. Start planning now!</p>
+              </div>
+            ) : (
+              <ul className="space-y-4">
+                {plan.map((item) => (
+                  <li key={item.id} className="gradient-bg-soft rounded-lg p-4 border border-primary/20">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="font-semibold text-lg gradient-text">{item.title}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{item.description}</div>
+                        <div className="text-xs text-muted-foreground mt-2">
+                          Created: {new Date(item.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <Button
+                        variant={item.completed ? "secondary" : "default"}
+                        size="sm"
+                        onClick={() => handleToggleComplete(item.id)}
+                        className={item.completed ? "gradient-bg-soft" : "gradient-button"}
+                      >
+                        {item.completed ? "✓ Completed" : "Mark Complete"}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Add New Plan */}
-        <div className="col-md-6">
-          <div className="card shadow p-4">
-            <h2 className="mb-4 text-center">Add a New Goal</h2>
+        <Card className="gradient-card-hover">
+          <CardHeader>
+            <CardTitle className="text-center gradient-text text-xl">Add a New Goal</CardTitle>
+          </CardHeader>
+          <CardContent>
             <form
-              onSubmit={(e) => {
+              className="space-y-6"
+              onSubmit={e => {
                 e.preventDefault();
                 handleAddPlan();
               }}
             >
-              <div className="mb-3">
-                <label htmlFor="title" className="form-label">
-                  Goal Title
-                </label>
-                <input
-                  type="text"
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-sm font-medium">Goal Title</Label>
+                <Input
                   id="title"
-                  className="form-control"
+                  type="text"
                   value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
+                  onChange={e => setNewTitle(e.target.value)}
                   required
+                  placeholder="e.g. Learn Data Structures"
+                  className="gradient-border focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-              <div className="mb-3">
-                <label htmlFor="description" className="form-label">
-                  Description
-                </label>
-                <textarea
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                <Textarea
                   id="description"
-                  className="form-control"
                   value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
+                  onChange={e => setNewDescription(e.target.value)}
                   rows={3}
                   required
-                ></textarea>
+                  placeholder="Describe your goal..."
+                  className="gradient-border focus:ring-2 focus:ring-primary/20"
+                />
               </div>
-              <button type="submit" className="btn btn-success w-100">
+              <Button type="submit" className="w-full gradient-button text-lg py-3">
                 Add Goal
-              </button>
+              </Button>
             </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Progress Overview */}
+      {plan.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="gradient-card-hover">
+            <CardContent className="text-center py-6">
+              <div className="text-3xl font-bold gradient-text-strong mb-2">{plan.length}</div>
+              <div className="text-sm text-muted-foreground">Total Goals</div>
+            </CardContent>
+          </Card>
+          <Card className="gradient-card-hover">
+            <CardContent className="text-center py-6">
+              <div className="text-3xl font-bold gradient-text-strong mb-2">
+                {plan.filter(item => item.completed).length}
+              </div>
+              <div className="text-sm text-muted-foreground">Completed Goals</div>
+            </CardContent>
+          </Card>
+          <Card className="gradient-card-hover">
+            <CardContent className="text-center py-6">
+              <div className="text-3xl font-bold gradient-text-strong mb-2">
+                {plan.length > 0 ? Math.round((plan.filter(item => item.completed).length / plan.length) * 100) : 0}%
+              </div>
+              <div className="text-sm text-muted-foreground">Completion Rate</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Milestone Timeline */}
+      {plan.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold text-center mb-8 gradient-text">Milestone Timeline</h2>
+          <div className="relative border-l-2 border-primary/30 pl-8 space-y-8">
+            {plan.map((item) => (
+              <div key={item.id} className="relative flex items-start gap-4">
+                <span className={`absolute -left-4 top-1 w-4 h-4 rounded-full border-2 ${item.completed ? 'gradient-bg border-primary' : 'bg-muted border-border'}`}></span>
+                <div className={`rounded-lg p-4 w-full ${item.completed ? 'gradient-bg-soft' : 'gradient-card'}`}>
+                  <div className="font-semibold gradient-text">{item.title}</div>
+                  <div className="text-sm text-muted-foreground">{item.description}</div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    {item.completed ? '✓ Completed' : '⏳ In Progress'}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
-
-      <div className="mt-5">
-        <h2 className="text-center mb-4">Milestone Timeline</h2>
-        <div className="timeline">
-          {plan.map((item, index) => (
-            <div key={item.id} className="timeline-item flex justify-center">
-              <div className="timeline-dot"></div>
-              <div className="timeline-content">
-                <h5>{item.title}</h5>
-                <p>{item.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <style jsx>{`
-        .timeline {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          position: relative;
-          padding-left: 40px;
-          border-left: 4px solidrgb(98, 146, 187);
-        }
-        .timeline-item {
-          position: relative;
-          padding-left: 20px;
-        }
-        .timeline-dot {
-          position: absolute;
-          left: -12px;
-          top: 0;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background-color: #6c757d;
-          border: 2px solid #fff;
-        }
-        .timeline-content {
-          background: rgba(45, 98, 177, 0.8);
-          padding: 10px 15px;
-          border-radius: 8px;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-      `}</style>
+      )}
     </div>
   );
 }
