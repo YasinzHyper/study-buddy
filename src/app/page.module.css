@@ -35,9 +35,9 @@
   /* -webkit-background-clip: text; */
   -webkit-text-fill-color: transparent;
 }
-body {
-  background: -webkit-linear-gradient(135deg, #022597, #334ca0, #074799);
-}
+/* body {
+  background: #fbc2eb;
+} */
 .colourfulMode {
   background: -webkit-linear-gradient(135deg, #022597, #334ca0, #074799);
   min-height: 100vh;
